@@ -1,9 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen } from "lucide-react";
+import { BookOpen, PenSquare, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navigation = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -13,7 +15,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 group">
             <BookOpen className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
-            <span className="font-display text-xl font-bold">Thoughtful Bytes</span>
+            <span className="font-display text-xl font-bold">Viral</span>
           </Link>
           
           <div className="flex items-center space-x-6">
@@ -33,9 +35,27 @@ const Navigation = () => {
             >
               About
             </Link>
-            <Button size="sm" className="ml-2">
-              Subscribe
-            </Button>
+            
+            {user ? (
+              <>
+                <Link to="/create">
+                  <Button size="sm" variant="default">
+                    <PenSquare className="h-4 w-4 mr-2" />
+                    Write
+                  </Button>
+                </Link>
+                <Button size="sm" variant="ghost" onClick={signOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button size="sm">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

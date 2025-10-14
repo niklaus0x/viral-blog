@@ -1,18 +1,64 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
-import { blogPosts } from "@/data/blogPosts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Clock, User } from "lucide-react";
-import postAi from "@/assets/post-ai.jpg";
-import postDesign from "@/assets/post-design.jpg";
-import postWeb from "@/assets/post-web.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import heroImage from "@/assets/hero-blog.jpg";
+
+interface Post {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  author_name: string;
+  image_url: string | null;
+  read_time: string;
+  created_at: string;
+}
 
 const BlogPost = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  const post = blogPosts.find(p => p.id === id);
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPost();
+  }, [id]);
+
+  const fetchPost = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setPost(data);
+    } catch (error: any) {
+      toast.error("Failed to load post");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container mx-auto px-4 py-24 text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!post) {
     return (
@@ -29,9 +75,8 @@ const BlogPost = () => {
     );
   }
 
-  const postImage = post.id === "future-of-ai" ? postAi :
-                    post.id === "design-thinking-2024" ? postDesign :
-                    post.id === "web-performance-2024" ? postWeb : post.image;
+  const postImage = post.image_url || heroImage;
+  const formattedDate = new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <div className="min-h-screen">
@@ -60,15 +105,15 @@ const BlogPost = () => {
             <div className="flex flex-wrap items-center gap-6 text-muted-foreground">
               <span className="flex items-center gap-2">
                 <User className="h-4 w-4" />
-                {post.author}
+                {post.author_name}
               </span>
               <span className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                {post.date}
+                {formattedDate}
               </span>
               <span className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                {post.readTime}
+                {post.read_time}
               </span>
             </div>
             
@@ -118,7 +163,7 @@ const BlogPost = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Written by</p>
-                <p className="font-display text-xl font-semibold">{post.author}</p>
+                <p className="font-display text-xl font-semibold">{post.author_name}</p>
               </div>
               <Button onClick={() => navigate("/")}>
                 More Articles

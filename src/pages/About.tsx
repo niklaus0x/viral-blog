@@ -10,25 +10,23 @@ const About = () => {
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         <div className="space-y-12">
           <div className="space-y-4">
-            <h1 className="text-5xl font-display font-bold">About Thoughtful Bytes</h1>
+            <h1 className="text-5xl font-display font-bold">About Viral</h1>
             <p className="text-xl text-muted-foreground">
-              Where technology meets creativity and innovation
+              A platform for creators to share ideas that matter
             </p>
           </div>
 
           <div className="prose prose-lg max-w-none space-y-6">
             <p className="text-lg leading-relaxed">
-              Welcome to Thoughtful Bytes, a space dedicated to exploring the ever-evolving landscape 
-              of technology, design, and creative thinking. We believe that the best innovations happen 
-              at the intersection of different disciplines.
+              Welcome to Viral, a space where creators come together to share their stories, insights, 
+              and ideas with the world. We believe in the power of authentic voices and meaningful content.
             </p>
 
             <div className="my-12 p-8 bg-gradient-to-br from-primary/5 to-accent/5 rounded-2xl border">
               <h2 className="text-3xl font-display font-semibold mb-4">Our Mission</h2>
               <p className="text-lg leading-relaxed">
-                To share insights, spark conversations, and inspire thoughtful approaches to building 
-                the digital future. We write about emerging technologies, design principles, and the 
-                human side of software development.
+                To empower creators to share their unique perspectives and build a community where 
+                ideas can flourish and inspire others. Everyone has a story worth telling.
               </p>
             </div>
 
@@ -36,31 +34,31 @@ const About = () => {
             
             <div className="grid md:grid-cols-3 gap-6 my-8">
               <div className="p-6 bg-card rounded-xl border hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-display font-semibold mb-3">Technology</h3>
+                <h3 className="text-xl font-display font-semibold mb-3">Diverse Voices</h3>
                 <p className="text-muted-foreground">
-                  Deep dives into AI, web development, and emerging tech trends
+                  Everyone can share their perspective on any topic that matters to them
                 </p>
               </div>
               
               <div className="p-6 bg-card rounded-xl border hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-display font-semibold mb-3">Design</h3>
+                <h3 className="text-xl font-display font-semibold mb-3">Authentic Stories</h3>
                 <p className="text-muted-foreground">
-                  Exploring UX/UI principles and the art of creating delightful experiences
+                  Real experiences and genuine insights from creators around the world
                 </p>
               </div>
               
               <div className="p-6 bg-card rounded-xl border hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-display font-semibold mb-3">Innovation</h3>
+                <h3 className="text-xl font-display font-semibold mb-3">Community First</h3>
                 <p className="text-muted-foreground">
-                  Stories about creativity, problem-solving, and pushing boundaries
+                  Building connections and fostering meaningful conversations
                 </p>
               </div>
             </div>
 
-            <h2 className="text-3xl font-display font-semibold mt-12 mb-6">Join the Conversation</h2>
+            <h2 className="text-3xl font-display font-semibold mt-12 mb-6">Start Creating</h2>
             <p className="text-lg leading-relaxed">
-              We'd love to hear from you. Whether you have feedback on our articles, suggestions for 
-              topics, or just want to say hello, don't hesitate to reach out.
+              Join our community of creators. Sign up to start sharing your ideas, stories, and insights 
+              with readers around the world. Your voice matters.
             </p>
 
             <div className="flex gap-4 mt-8">
@@ -86,7 +84,7 @@ const About = () => {
         <div className="container mx-auto px-4">
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              © 2024 Thoughtful Bytes. All rights reserved.
+              © 2024 Viral. All rights reserved.
             </p>
             <p className="text-sm text-muted-foreground">
               Made with passion for writing and technology
