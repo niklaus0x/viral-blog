@@ -37,13 +37,9 @@ const Index = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
-      }
+      if (error) throw error;
       setPosts(data || []);
     } catch (error: any) {
-      console.error("Failed to load posts:", error);
       toast.error("Failed to load posts");
     } finally {
       setLoading(false);
