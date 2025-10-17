@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, PenSquare, LogOut, Menu } from "lucide-react";
+import { BookOpen, PenSquare, LogOut, Menu, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import {
@@ -46,6 +46,12 @@ const Navigation = () => {
             
             {user ? (
               <>
+                <Link to={`/profile/${user.id}`}>
+                  <Button size="sm" variant="ghost">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
                 <Link to="/create">
                   <Button size="sm" variant="default">
                     <PenSquare className="h-4 w-4 mr-2" />
@@ -97,6 +103,12 @@ const Navigation = () => {
                 <div className="border-t pt-4 mt-4">
                   {user ? (
                     <>
+                      <Link to={`/profile/${user.id}`} onClick={() => setOpen(false)}>
+                        <Button className="w-full mb-3" variant="ghost">
+                          <User className="h-4 w-4 mr-2" />
+                          Profile
+                        </Button>
+                      </Link>
                       <Link to="/create" onClick={() => setOpen(false)}>
                         <Button className="w-full mb-3" variant="default">
                           <PenSquare className="h-4 w-4 mr-2" />

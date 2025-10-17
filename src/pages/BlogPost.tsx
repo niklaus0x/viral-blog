@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/Navigation";
 import Comments from "@/components/Comments";
 import { Button } from "@/components/ui/button";
@@ -181,6 +182,19 @@ const BlogPost = () => {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>{post.title} | Viral</title>
+        <meta name="description" content={post.excerpt} />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.excerpt} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={window.location.href} />
+        {postImage && <meta property="og:image" content={postImage} />}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={post.excerpt} />
+        {postImage && <meta name="twitter:image" content={postImage} />}
+      </Helmet>
       <Navigation />
       
       <article className="py-6 sm:py-8 md:py-12">
@@ -246,10 +260,10 @@ const BlogPost = () => {
             </h1>
             
             <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base text-muted-foreground">
-              <span className="flex items-center gap-2">
+              <Link to={`/profile/${post.author_id}`} className="flex items-center gap-2 hover:text-primary transition-colors">
                 <User className="h-4 w-4" />
                 {post.author_name}
-              </span>
+              </Link>
               <span className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 {formattedDate}
@@ -306,7 +320,9 @@ const BlogPost = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground mb-2">Written by</p>
-                <p className="font-display text-lg sm:text-xl font-semibold">{post.author_name}</p>
+                <Link to={`/profile/${post.author_id}`} className="font-display text-lg sm:text-xl font-semibold hover:text-primary transition-colors">
+                  {post.author_name}
+                </Link>
               </div>
               <Button onClick={() => navigate("/")} size="sm" className="w-full sm:w-auto">
                 More Articles

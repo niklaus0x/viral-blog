@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, X } from "lucide-react";
 
 const postSchema = z.object({
   title: z.string().trim().min(5, "Title must be at least 5 characters").max(200, "Title must be less than 200 characters"),
@@ -31,6 +31,8 @@ const EditPost = () => {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -84,6 +86,41 @@ const EditPost = () => {
     const words = text.trim().split(/\s+/).length;
     const minutes = Math.ceil(words / wordsPerMinute);
     return `${minutes} min read`;
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Upload failed");
+      }
+
+      const { url } = await response.json();
+      setUploadedImageUrl(url);
+      setImageUrl(url);
+      toast.success("Image uploaded successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeUploadedImage = () => {
+    setUploadedImageUrl("");
+    setImageUrl("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,14 +250,62 @@ const EditPost = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Cover Image URL (optional)</Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-              />
+              <Label htmlFor="imageUpload">Cover Image</Label>
+              <div className="space-y-3">
+                {uploadedImageUrl ? (
+                  <div className="relative">
+                    <img
+                      src={uploadedImageUrl}
+                      alt="Uploaded cover"
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={removeUploadedImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="imageUpload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                        className="flex-1"
+                      />
+                      {uploading && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Upload className="h-4 w-4 animate-pulse" />
+                          Uploading...
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upload an image or provide a URL below (max 5MB)
+                    </p>
+                  </div>
+                )}
+                
+                {!uploadedImageUrl && (
+                  <div className="space-y-2">
+                    <Label htmlFor="imageUrl" className="text-sm">Or enter image URL</Label>
+                    <Input
+                      id="imageUrl"
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-4">
