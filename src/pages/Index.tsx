@@ -5,8 +5,8 @@ import BlogCard from "@/components/BlogCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import heroImage from "@/assets/hero-blog.jpg";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { blogPosts } from "@/data/blogPosts";
 
 interface Post {
   id: string;
@@ -32,20 +32,49 @@ const Index = () => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-      if (error) throw error;
-      setPosts(data || []);
+      if (hasCloud) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setPosts((data || []) as Post[]);
+      } else {
+        // Fallback to static posts when backend is unavailable
+        const mapped: Post[] = blogPosts.map(p => ({
+          id: p.id,
+          title: p.title,
+          excerpt: p.excerpt,
+          category: p.category,
+          author_name: p.author,
+          image_url: null,
+          read_time: p.readTime,
+          created_at: new Date().toISOString(),
+        }));
+        setPosts(mapped);
+      }
     } catch (error: any) {
-      toast.error("Failed to load posts");
+      // If anything fails, show static posts so the page remains visible
+      const mapped: Post[] = blogPosts.map(p => ({
+        id: p.id,
+        title: p.title,
+        excerpt: p.excerpt,
+        category: p.category,
+        author_name: p.author,
+        image_url: null,
+        read_time: p.readTime,
+        created_at: new Date().toISOString(),
+      }));
+      setPosts(mapped);
+      if (error?.message) toast.error("Failed to load live posts. Showing samples.");
     } finally {
       setLoading(false);
     }
   };
-  
   const filteredPosts = selectedCategory === "All" 
     ? posts 
     : posts.filter(post => post.category === selectedCategory);

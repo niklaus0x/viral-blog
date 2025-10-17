@@ -4,13 +4,13 @@ import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Clock, User, Share2, Eye, Twitter, Facebook, Linkedin, Link2, Edit, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import heroImage from "@/assets/hero-blog.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { blogPosts } from "@/data/blogPosts";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +55,7 @@ const BlogPost = () => {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
   useEffect(() => {
     if (id) {
