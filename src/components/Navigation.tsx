@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 const Navigation = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -36,25 +37,29 @@ const Navigation = () => {
               About
             </Link>
             
-            {user ? (
+            {hasCloud && (
               <>
-                <Link to="/create">
-                  <Button size="sm" variant="default">
-                    <PenSquare className="h-4 w-4 mr-2" />
-                    Write
-                  </Button>
-                </Link>
-                <Button size="sm" variant="ghost" onClick={signOut}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
+                {user ? (
+                  <>
+                    <Link to="/create">
+                      <Button size="sm" variant="default">
+                        <PenSquare className="h-4 w-4 mr-2" />
+                        Write
+                      </Button>
+                    </Link>
+                    <Button size="sm" variant="ghost" onClick={signOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <Link to="/auth">
+                    <Button size="sm">
+                      Sign In
+                    </Button>
+                  </Link>
+                )}
               </>
-            ) : (
-              <Link to="/auth">
-                <Button size="sm">
-                  Sign In
-                </Button>
-              </Link>
             )}
           </div>
         </div>

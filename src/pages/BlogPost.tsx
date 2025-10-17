@@ -30,11 +30,11 @@ interface Post {
   content: string;
   category: string;
   author_name: string;
-  author_id: string;
-  image_url: string | null;
+  author_id?: string;
+  image_url?: string | null;
   read_time: string;
   created_at: string;
-  view_count: number;
+  view_count?: number;
 }
 
 interface Comment {
@@ -60,8 +60,10 @@ const BlogPost = () => {
   useEffect(() => {
     if (id) {
       fetchPost();
-      fetchComments();
-      incrementViewCount();
+      if (hasCloud) {
+        fetchComments();
+        incrementViewCount();
+      }
     }
   }, [id]);
 
@@ -69,14 +71,35 @@ const BlogPost = () => {
     if (!id) return;
 
     try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
+      if (hasCloud) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
 
-      if (error) throw error;
-      setPost(data);
+        if (error) throw error;
+        setPost(data);
+      } else {
+        // Fallback to static blog posts
+        const staticPost = blogPosts.find(p => p.id === id);
+        if (staticPost) {
+          setPost({
+            id: staticPost.id,
+            title: staticPost.title,
+            excerpt: staticPost.excerpt,
+            content: staticPost.content,
+            category: staticPost.category,
+            author_name: staticPost.author,
+            read_time: staticPost.readTime,
+            created_at: staticPost.date,
+            view_count: 0,
+          });
+        } else {
+          setPost(null);
+        }
+      }
     } catch (error: any) {
       toast.error("Failed to load post");
     } finally {
@@ -85,9 +108,10 @@ const BlogPost = () => {
   };
 
   const fetchComments = async () => {
-    if (!id) return;
+    if (!id || !hasCloud) return;
 
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("comments")
         .select("*")
@@ -102,9 +126,10 @@ const BlogPost = () => {
   };
 
   const incrementViewCount = async () => {
-    if (!id) return;
+    if (!id || !hasCloud) return;
 
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data: currentPost } = await supabase
         .from("posts")
         .select("view_count")
@@ -124,11 +149,12 @@ const BlogPost = () => {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !post || !newComment.trim()) return;
+    if (!user || !post || !newComment.trim() || !hasCloud) return;
 
     setSubmittingComment(true);
 
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase
         .from("comments")
         .insert({
@@ -151,7 +177,10 @@ const BlogPost = () => {
   };
 
   const handleDeleteComment = async (commentId: string) => {
+    if (!hasCloud) return;
+    
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase
         .from("comments")
         .delete()
@@ -167,9 +196,10 @@ const BlogPost = () => {
   };
 
   const handleDeletePost = async () => {
-    if (!post) return;
+    if (!post || !hasCloud) return;
 
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase
         .from("posts")
         .delete()
@@ -256,7 +286,7 @@ const BlogPost = () => {
               Back to Blog
             </Button>
             
-            {isAuthor && (
+            {isAuthor && hasCloud && (
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
@@ -311,10 +341,12 @@ const BlogPost = () => {
                 <Clock className="h-4 w-4" />
                 {post.read_time}
               </span>
-              <span className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                {post.view_count} views
-              </span>
+              {hasCloud && post.view_count !== undefined && (
+                <span className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  {post.view_count} views
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-2 pt-4">
@@ -380,70 +412,72 @@ const BlogPost = () => {
           
           <Separator className="my-12" />
           
-          {/* Comments Section */}
-          <div className="mt-16">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl font-display">
-                  Comments ({comments.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {user ? (
-                  <form onSubmit={handleSubmitComment} className="space-y-4">
-                    <Textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Share your thoughts..."
-                      rows={4}
-                      required
-                    />
-                    <Button type="submit" disabled={submittingComment}>
-                      {submittingComment ? "Posting..." : "Post Comment"}
-                    </Button>
-                  </form>
-                ) : (
-                  <div className="text-center py-8 bg-muted/30 rounded-lg">
-                    <p className="text-muted-foreground mb-4">Sign in to leave a comment</p>
-                    <Button onClick={() => navigate("/auth")}>Sign In</Button>
-                  </div>
-                )}
+          {/* Comments Section - only show if Cloud is enabled */}
+          {hasCloud && (
+            <div className="mt-16">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl font-display">
+                    Comments ({comments.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {user ? (
+                    <form onSubmit={handleSubmitComment} className="space-y-4">
+                      <Textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Share your thoughts..."
+                        rows={4}
+                        required
+                      />
+                      <Button type="submit" disabled={submittingComment}>
+                        {submittingComment ? "Posting..." : "Post Comment"}
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="text-center py-8 bg-muted/30 rounded-lg">
+                      <p className="text-muted-foreground mb-4">Sign in to leave a comment</p>
+                      <Button onClick={() => navigate("/auth")}>Sign In</Button>
+                    </div>
+                  )}
 
-                {comments.length > 0 && (
-                  <div className="space-y-4 mt-8">
-                    {comments.map((comment) => (
-                      <Card key={comment.id}>
-                        <CardContent className="pt-6">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <p className="font-semibold">{comment.author_name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(comment.created_at).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </p>
+                  {comments.length > 0 && (
+                    <div className="space-y-4 mt-8">
+                      {comments.map((comment) => (
+                        <Card key={comment.id}>
+                          <CardContent className="pt-6">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <p className="font-semibold">{comment.author_name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(comment.created_at).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </p>
+                              </div>
+                              {user?.id === comment.user_id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
-                            {user?.id === comment.user_id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteComment(comment.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                          <p className="text-foreground/90 whitespace-pre-line">{comment.content}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                            <p className="text-foreground/90 whitespace-pre-line">{comment.content}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
           
           <div className="mt-16 pt-8 border-t">
             <div className="flex items-center justify-between">

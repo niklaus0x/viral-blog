@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 
@@ -36,19 +35,26 @@ const EditPost = () => {
     category: "Technology",
     imageUrl: "",
   });
+  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
   useEffect(() => {
+    if (!hasCloud) {
+      toast.error("Backend required to edit posts");
+      navigate("/");
+      return;
+    }
     if (!user) {
       navigate("/auth");
       return;
     }
     fetchPost();
-  }, [user, id]);
+  }, [user, id, hasCloud]);
 
   const fetchPost = async () => {
-    if (!id) return;
+    if (!id || !hasCloud) return;
 
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("posts")
         .select("*")
@@ -56,7 +62,7 @@ const EditPost = () => {
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data) {
         toast.error("Post not found");
         navigate("/");
@@ -85,13 +91,23 @@ const EditPost = () => {
     }
   };
 
+  const calculateReadTime = (text: string): string => {
+    const wordsPerMinute = 200;
+    const words = text.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / wordsPerMinute);
+    return `${minutes} min read`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !post) return;
+    if (!post || !hasCloud) return;
 
     setSubmitting(true);
 
     try {
+      const readTime = calculateReadTime(formData.content);
+
+      const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase
         .from("posts")
         .update({
@@ -100,6 +116,7 @@ const EditPost = () => {
           content: formData.content,
           category: formData.category,
           image_url: formData.imageUrl || null,
+          read_time: readTime,
         })
         .eq("id", post.id);
 
@@ -108,11 +125,15 @@ const EditPost = () => {
       toast.success("Post updated successfully!");
       navigate(`/post/${post.id}`);
     } catch (error: any) {
-      toast.error("Failed to update post");
+      toast.error(error.message || "Failed to update post");
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (!hasCloud || !user) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -125,19 +146,24 @@ const EditPost = () => {
     );
   }
 
+  if (!post) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <Navigation />
       
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(`/post/${id}`)}
-          className="mb-8"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Post
-        </Button>
+        <div className="mb-8">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(`/post/${post.id}`)}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Post
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>
@@ -146,47 +172,22 @@ const EditPost = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title">Title *</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Enter post title"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="excerpt">Excerpt</Label>
-                <Textarea
-                  id="excerpt"
-                  value={formData.excerpt}
-                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                  placeholder="Brief description of your post"
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Write your post content here..."
-                  rows={15}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">Category *</Label>
                 <Select 
                   value={formData.category} 
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="category">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -201,19 +202,53 @@ const EditPost = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL (optional)</Label>
+                <Label htmlFor="excerpt">Excerpt *</Label>
+                <Textarea
+                  id="excerpt"
+                  value={formData.excerpt}
+                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imageUrl">Featured Image URL (optional)</Label>
                 <Input
                   id="imageUrl"
                   type="url"
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
                 />
               </div>
 
-              <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? "Updating..." : "Update Post"}
-              </Button>
+              <div className="space-y-2">
+                <Label htmlFor="content">Content *</Label>
+                <Textarea
+                  id="content"
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  rows={15}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  {formData.content.length} characters • {calculateReadTime(formData.content)}
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <Button type="submit" disabled={submitting} className="flex-1">
+                  {submitting ? "Saving..." : "Save Changes"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate(`/post/${post.id}`)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>

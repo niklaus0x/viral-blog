@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,20 +23,28 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
   useEffect(() => {
+    if (!hasCloud) {
+      toast.error("Backend required for authentication");
+      navigate("/");
+      return;
+    }
     if (user) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, navigate, hasCloud]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasCloud) return;
     setLoading(true);
 
     try {
       const validatedData = authSchema.parse({ email, password, displayName });
       
+      const { supabase } = await import("@/integrations/supabase/client");
       const redirectUrl = `${window.location.origin}/`;
       const { error } = await supabase.auth.signUp({
         email: validatedData.email,
@@ -71,11 +78,13 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasCloud) return;
     setLoading(true);
 
     try {
       const validatedData = authSchema.parse({ email, password });
       
+      const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.auth.signInWithPassword({
         email: validatedData.email,
         password: validatedData.password,
@@ -97,6 +106,10 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  if (!hasCloud) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 px-4">

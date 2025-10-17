@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
@@ -29,13 +28,19 @@ const CreatePost = () => {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
   useEffect(() => {
+    if (!hasCloud) {
+      toast.error("Backend required to create posts");
+      navigate("/");
+      return;
+    }
     if (!user) {
       toast.error("Please sign in to create a post");
       navigate("/auth");
     }
-  }, [user, navigate]);
+  }, [user, navigate, hasCloud]);
 
   const calculateReadTime = (text: string): string => {
     const wordsPerMinute = 200;
@@ -46,7 +51,7 @@ const CreatePost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !hasCloud) return;
 
     setLoading(true);
 
@@ -56,16 +61,12 @@ const CreatePost = () => {
         excerpt,
         content,
         category,
-        imageUrl: imageUrl || undefined,
+        imageUrl: imageUrl || "",
       });
 
-      // Get user profile for display name
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const readTime = calculateReadTime(validatedData.content);
 
+      const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.from("posts").insert({
         title: validatedData.title,
         excerpt: validatedData.excerpt,
@@ -73,8 +74,8 @@ const CreatePost = () => {
         category: validatedData.category,
         image_url: validatedData.imageUrl || null,
         author_id: user.id,
-        author_name: profile?.display_name || user.email?.split("@")[0] || "Anonymous",
-        read_time: calculateReadTime(validatedData.content),
+        author_name: user.email?.split("@")[0] || "Anonymous",
+        read_time: readTime,
       });
 
       if (error) throw error;
@@ -92,24 +93,27 @@ const CreatePost = () => {
     }
   };
 
-  if (!user) return null;
+  if (!hasCloud || !user) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <Navigation />
-
+      
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/")}
-          className="mb-8"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Blog
-        </Button>
+        <div className="mb-8">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Button>
+        </div>
 
-        <div className="space-y-6">
-          <div>
+        <div className="bg-card rounded-2xl shadow-lg p-8">
+          <div className="mb-8">
             <h1 className="text-4xl font-display font-bold mb-2">Create New Post</h1>
             <p className="text-muted-foreground">Share your thoughts with the world</p>
           </div>
@@ -119,9 +123,9 @@ const CreatePost = () => {
               <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
-                placeholder="Enter an engaging title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter an engaging title..."
                 required
               />
             </div>
@@ -147,11 +151,25 @@ const CreatePost = () => {
               <Label htmlFor="excerpt">Excerpt *</Label>
               <Textarea
                 id="excerpt"
-                placeholder="Write a brief summary of your post..."
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
+                placeholder="Write a brief summary (10-500 characters)..."
                 rows={3}
                 required
+              />
+              <p className="text-xs text-muted-foreground">
+                {excerpt.length}/500 characters
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="imageUrl">Featured Image URL (optional)</Label>
+              <Input
+                id="imageUrl"
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
               />
             </div>
 
@@ -159,26 +177,18 @@ const CreatePost = () => {
               <Label htmlFor="content">Content *</Label>
               <Textarea
                 id="content"
-                placeholder="Write your post content here..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                placeholder="Write your post content here... (Markdown supported: ## for headers, ### for subheaders)"
                 rows={15}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                {content.length} characters • {calculateReadTime(content)}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl">Cover Image URL (optional)</Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-4">
               <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? "Publishing..." : "Publish Post"}
               </Button>
