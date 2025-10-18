@@ -59,7 +59,8 @@ const CreatePost = () => {
 
       const readTime = calculateReadTime(validatedData.content);
 
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { error } = await supabase.from("posts").insert({
         title: validatedData.title,
         excerpt: validatedData.excerpt,

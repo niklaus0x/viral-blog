@@ -68,7 +68,8 @@ const BlogPost = () => {
     if (!id) return;
 
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from("posts")
         .select("*")
@@ -89,7 +90,8 @@ const BlogPost = () => {
     if (!id) return;
 
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from("comments")
         .select("*")
@@ -107,7 +109,8 @@ const BlogPost = () => {
     if (!id) return;
 
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { data: currentPost } = await supabase
         .from("posts")
         .select("view_count")
@@ -132,7 +135,8 @@ const BlogPost = () => {
     setSubmittingComment(true);
 
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { error } = await supabase
         .from("comments")
         .insert({
@@ -157,7 +161,8 @@ const BlogPost = () => {
 
   const handleDeleteComment = async (commentId: string) => {
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { error } = await supabase
         .from("comments")
         .delete()
@@ -177,7 +182,8 @@ const BlogPost = () => {
     if (!post) return;
 
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { error } = await supabase
         .from("posts")
         .delete()

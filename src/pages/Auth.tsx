@@ -36,7 +36,8 @@ const Auth = () => {
     try {
       const validatedData = authSchema.parse({ email, password, displayName });
       
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const redirectUrl = `${window.location.origin}/`;
       const { error } = await supabase.auth.signUp({
         email: validatedData.email,
@@ -75,7 +76,8 @@ const Auth = () => {
     try {
       const validatedData = authSchema.parse({ email, password });
       
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { error } = await supabase.auth.signInWithPassword({
         email: validatedData.email,
         password: validatedData.password,

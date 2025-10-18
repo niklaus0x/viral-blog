@@ -32,7 +32,8 @@ const Index = () => {
 
   const fetchPosts = async () => {
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from("posts")
         .select("*")

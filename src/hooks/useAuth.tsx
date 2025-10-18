@@ -29,7 +29,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let unsubscribe: (() => void) | undefined;
 
     // Dynamically import the client only when env is present
-    import("@/integrations/supabase/client").then(({ supabase }) => {
+    import("@/lib/supabaseClient").then(({ getSupabase }) => {
+      const supabase = getSupabase();
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
@@ -60,7 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate("/");
       return;
     }
-    const { supabase } = await import("@/integrations/supabase/client");
+    const { getSupabase } = await import("@/lib/supabaseClient");
+    const supabase = getSupabase();
     await supabase.auth.signOut();
     navigate("/");
   };

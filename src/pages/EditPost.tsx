@@ -51,7 +51,8 @@ const EditPost = () => {
     if (!id) return;
 
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from("posts")
         .select("*")
@@ -104,7 +105,8 @@ const EditPost = () => {
     try {
       const readTime = calculateReadTime(formData.content);
 
-      const { supabase } = await import("@/integrations/supabase/client");
+      const { getSupabase } = await import("@/lib/supabaseClient");
+      const supabase = getSupabase();
       const { error } = await supabase
         .from("posts")
         .update({
