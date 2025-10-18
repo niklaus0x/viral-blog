@@ -23,22 +23,14 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
-
   useEffect(() => {
-    if (!hasCloud) {
-      toast.error("Backend required for authentication");
-      navigate("/");
-      return;
-    }
     if (user) {
       navigate("/");
     }
-  }, [user, navigate, hasCloud]);
+  }, [user, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hasCloud) return;
     setLoading(true);
 
     try {
@@ -78,7 +70,6 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hasCloud) return;
     setLoading(true);
 
     try {
@@ -107,9 +98,6 @@ const Auth = () => {
     }
   };
 
-  if (!hasCloud) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 px-4">

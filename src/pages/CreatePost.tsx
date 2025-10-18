@@ -28,19 +28,12 @@ const CreatePost = () => {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
-
   useEffect(() => {
-    if (!hasCloud) {
-      toast.error("Backend required to create posts");
-      navigate("/");
-      return;
-    }
     if (!user) {
       toast.error("Please sign in to create a post");
       navigate("/auth");
     }
-  }, [user, navigate, hasCloud]);
+  }, [user, navigate]);
 
   const calculateReadTime = (text: string): string => {
     const wordsPerMinute = 200;
@@ -51,7 +44,7 @@ const CreatePost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !hasCloud) return;
+    if (!user) return;
 
     setLoading(true);
 
@@ -93,7 +86,7 @@ const CreatePost = () => {
     }
   };
 
-  if (!hasCloud || !user) {
+  if (!user) {
     return null;
   }
 

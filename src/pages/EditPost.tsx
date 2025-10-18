@@ -35,23 +35,20 @@ const EditPost = () => {
     category: "Technology",
     imageUrl: "",
   });
-  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
-
   useEffect(() => {
-    if (!hasCloud) {
-      toast.error("Backend required to edit posts");
-      navigate("/");
-      return;
-    }
     if (!user) {
+      toast.error("Please sign in to edit posts");
       navigate("/auth");
       return;
     }
-    fetchPost();
-  }, [user, id, hasCloud]);
+
+    if (id) {
+      fetchPost();
+    }
+  }, [user, id, navigate]);
 
   const fetchPost = async () => {
-    if (!id || !hasCloud) return;
+    if (!id) return;
 
     try {
       const { supabase } = await import("@/integrations/supabase/client");
@@ -100,7 +97,7 @@ const EditPost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!post || !hasCloud) return;
+    if (!post) return;
 
     setSubmitting(true);
 
@@ -131,11 +128,7 @@ const EditPost = () => {
     }
   };
 
-  if (!hasCloud || !user) {
-    return null;
-  }
-
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen">
         <Navigation />

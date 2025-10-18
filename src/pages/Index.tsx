@@ -32,45 +32,17 @@ const Index = () => {
 
   const fetchPosts = async () => {
     try {
-      const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (hasCloud) {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { data, error } = await supabase
-          .from("posts")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        setPosts((data || []) as Post[]);
-      } else {
-        // Fallback to static posts when backend is unavailable
-        const mapped: Post[] = blogPosts.map(p => ({
-          id: p.id,
-          title: p.title,
-          excerpt: p.excerpt,
-          category: p.category,
-          author_name: p.author,
-          image_url: null,
-          read_time: p.readTime,
-          created_at: new Date().toISOString(),
-        }));
-        setPosts(mapped);
-      }
+      if (error) throw error;
+      setPosts((data || []) as Post[]);
     } catch (error: any) {
-      // If anything fails, show static posts so the page remains visible
-      const mapped: Post[] = blogPosts.map(p => ({
-        id: p.id,
-        title: p.title,
-        excerpt: p.excerpt,
-        category: p.category,
-        author_name: p.author,
-        image_url: null,
-        read_time: p.readTime,
-        created_at: new Date().toISOString(),
-      }));
-      setPosts(mapped);
-      if (error?.message) toast.error("Failed to load live posts. Showing samples.");
+      toast.error("Failed to load posts");
+      console.error(error);
     } finally {
       setLoading(false);
     }

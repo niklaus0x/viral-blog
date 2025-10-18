@@ -55,15 +55,12 @@ const BlogPost = () => {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
-  const hasCloud = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
   useEffect(() => {
     if (id) {
       fetchPost();
-      if (hasCloud) {
-        fetchComments();
-        incrementViewCount();
-      }
+      fetchComments();
+      incrementViewCount();
     }
   }, [id]);
 
@@ -71,48 +68,129 @@ const BlogPost = () => {
     if (!id) return;
 
     try {
-      const staticPost = blogPosts.find(p => p.id === id);
-      if (staticPost) {
-        setPost({
-          id: staticPost.id,
-          title: staticPost.title,
-          excerpt: staticPost.excerpt,
-          content: staticPost.content,
-          category: staticPost.category,
-          author_name: staticPost.author,
-          read_time: staticPost.readTime,
-          created_at: staticPost.date,
-          view_count: 0,
-        });
-      } else {
-        setPost(null);
-      }
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setPost(data);
     } catch (error: any) {
       toast.error("Failed to load post");
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchComments = async () => {
-    setComments([]);
+    if (!id) return;
+
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase
+        .from("comments")
+        .select("*")
+        .eq("post_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setComments(data || []);
+    } catch (error: any) {
+      console.error("Failed to load comments:", error);
+    }
   };
 
   const incrementViewCount = async () => {
-    // View count disabled in static mode
+    if (!id) return;
+
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: currentPost } = await supabase
+        .from("posts")
+        .select("view_count")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (currentPost) {
+        await supabase
+          .from("posts")
+          .update({ view_count: (currentPost.view_count || 0) + 1 })
+          .eq("id", id);
+      }
+    } catch (error: any) {
+      console.error("Failed to increment view count:", error);
+    }
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.error("Comments are disabled in static mode");
+    if (!user || !post || !newComment.trim()) return;
+
+    setSubmittingComment(true);
+
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase
+        .from("comments")
+        .insert({
+          post_id: post.id,
+          user_id: user.id,
+          author_name: user.email?.split("@")[0] || "Anonymous",
+          content: newComment.trim(),
+        });
+
+      if (error) throw error;
+
+      toast.success("Comment added!");
+      setNewComment("");
+      fetchComments();
+    } catch (error: any) {
+      toast.error("Failed to add comment");
+      console.error(error);
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    // Comments disabled in static mode
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (error) throw error;
+
+      toast.success("Comment deleted");
+      fetchComments();
+    } catch (error: any) {
+      toast.error("Failed to delete comment");
+      console.error(error);
+    }
   };
 
   const handleDeletePost = async () => {
-    // Deleting posts is disabled in static mode
+    if (!post) return;
+
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", post.id);
+
+      if (error) throw error;
+
+      toast.success("Post deleted");
+      navigate("/");
+    } catch (error: any) {
+      toast.error("Failed to delete post");
+      console.error(error);
+    }
   };
 
   const handleShare = (platform: string) => {
@@ -187,7 +265,7 @@ const BlogPost = () => {
               Back to Blog
             </Button>
             
-            {isAuthor && hasCloud && (
+            {isAuthor && (
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
@@ -242,7 +320,7 @@ const BlogPost = () => {
                 <Clock className="h-4 w-4" />
                 {post.read_time}
               </span>
-              {hasCloud && post.view_count !== undefined && (
+              {post.view_count !== undefined && (
                 <span className="flex items-center gap-2">
                   <Eye className="h-4 w-4" />
                   {post.view_count} views
@@ -313,8 +391,7 @@ const BlogPost = () => {
           
           <Separator className="my-12" />
           
-          {/* Comments Section - only show if Cloud is enabled */}
-          {hasCloud && (
+          {/* Comments Section */}
             <div className="mt-16">
               <Card>
                 <CardHeader>
@@ -378,7 +455,6 @@ const BlogPost = () => {
                 </CardContent>
               </Card>
             </div>
-          )}
           
           <div className="mt-16 pt-8 border-t">
             <div className="flex items-center justify-between">
